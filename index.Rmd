@@ -6,7 +6,7 @@ css: styles.css
 runtime: shiny
 ---
 
-# Seagrass transect training {.tabset}
+# SEAGRASS TRANSECT TRAINING {.tabset}
   
 ```{r setup, message = F, warning = F, results = 'hide', echo = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = F, message = F, echo = F, fig.path = 'figs/', fig.path = 'figures/')
