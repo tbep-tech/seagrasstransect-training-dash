@@ -48,9 +48,6 @@ downloadButtonRmd <- function (outputId, label, class = NULL, ...)  {
 
 # metric summary
 datsum <- dat %>% 
-  dplyr::mutate(
-    grp = paste0(MonitoringAgency, ' (', Crew, ')')
-  ) %>% 
   group_by(yr, Site, Savspecies, var) %>% 
   summarise(
     cv = 100 * sd(aveval, na.rm = T) / mean(aveval, na.rm = T), 
