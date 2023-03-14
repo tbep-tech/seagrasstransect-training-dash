@@ -14,7 +14,6 @@ knitr::opts_chunk$set(echo = TRUE, warning = F, message = F, echo = F, fig.path 
 library(tidyverse)
 library(tbeptools)
 library(shiny)
-library(reactable)
 library(mapview)
 
 # for leaflet map
@@ -32,6 +31,12 @@ trnlns <- trnlns %>%
 # get data and format
 dat <- read_transect(training = TRUE)
 
+# crew lookup table
+crews <- dat %>% 
+  select(Year = yr, Group = grp, `Agency and Crew` = grpact) %>% 
+  unique %>% 
+  arrange(Year, Group)
+
 # get choices for selection
 sppopt <- unique(dat$Savspecies)
 
@@ -43,9 +48,6 @@ downloadButtonRmd <- function (outputId, label, class = NULL, ...)  {
 
 # metric summary
 datsum <- dat %>% 
-  dplyr::mutate(
-    grp = paste0(MonitoringAgency, ' (', Crew, ')')
-  ) %>% 
   group_by(yr, Site, Savspecies, var) %>% 
   summarise(
     cv = 100 * sd(aveval, na.rm = T) / mean(aveval, na.rm = T), 
@@ -90,6 +92,14 @@ output$dlfigs <- downloadHandler(
       
     dev.off()
     
+  }
+)
+
+# crew loookup
+output$dlcrew <- downloadHandler(
+  filename = function(){'crewlookup.csv'},
+  content = function(file){
+    write.csv(crews, file, quote = T, row.names = F)
   }
 )
 ```
@@ -142,41 +152,6 @@ sumplodat <- reactive({
   return(out)
   
 })
-
-crewtab <- reactive({
-  
-  # input
-  yrssel <- input$yrssel
-  
-  totab <- dat %>% 
-    filter(yr %in% yrssel) %>% 
-    select(`Montoring Agency` = MonitoringAgency, Crew) %>% 
-    unique
-
-  out <- reactable(totab, 
-    groupBy = 'Montoring Agency',
-    defaultColDef = colDef(
-      footerStyle = list(fontWeight = "bold"),
-      resizable = TRUE
-      ),
-    columns = list(
-      Crew = colDef(aggregated = JS("
-        function(cellInfo) {
-          // Get comma-separated list of unique values in visible rows
-          var values = cellInfo.subRows.map(function(row) { return row.Crew })
-          var unique = values.reduce(function(obj, v) { obj[v] = true; return obj }, {})
-          return Object.keys(unique).join(', ')
-        }
-      ")
-      )
-    ),
-    filterable = T, 
-    bordered = T
-  )
-  
-  return(out)
-  
-})
 ```
 
 ```{r}
@@ -223,13 +198,6 @@ output$sumplodat <- renderPlot(sumplodat(), height = 600, width = 850)
 plotOutput('sumplodat')
 ```
 
-## Crew inventory
-
-```{r}
-output$crewtab <- renderReactable(crewtab())
-reactableOutput('crewtab')
-```
-
 ## Transect locations
 
 ```{r, out.width = '100%'}
@@ -251,5 +219,12 @@ column(6,
   numericInput('height', 'Plot heights (in)', value = 7, min = 0, step = 1),
   numericInput('width', 'Plot widths (in)', value = 8, min = 0, step = 1)
 )
+```
+
+```{r}
+column(6,
+  HTML('<br></br>'),
+  downloadButtonRmd('dlcrew', 'Download crew lookup, all years')
+  )
 ```
 
