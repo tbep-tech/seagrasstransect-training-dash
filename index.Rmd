@@ -29,7 +29,8 @@ trnlns <- trnlns %>%
   filter(as.character(Site) %in% trnpts$TRAN_ID)
 
 # get data and format
-dat <- read_transect(training = TRUE)
+dat <- read_transect(training = TRUE) |> 
+  dplyr::filter(Species %in% c('Halodule', 'Syringodium', 'Thalassia', 'Halophila', 'Ruppia'))
 
 # crew lookup table
 crews <- dat %>% 
@@ -38,7 +39,7 @@ crews <- dat %>%
   arrange(Year, Group)
 
 # get choices for selection
-sppopt <- unique(dat$Savspecies)
+sppopt <- unique(dat$Species)
 
 downloadButtonRmd <- function (outputId, label, class = NULL, ...)  {
   tags$a(id = outputId, class = paste("btn btn-default shiny-download-link", 
@@ -48,7 +49,7 @@ downloadButtonRmd <- function (outputId, label, class = NULL, ...)  {
 
 # metric summary
 datsum <- dat %>% 
-  group_by(yr, Site, Savspecies, var) %>% 
+  group_by(yr, Site, Species, var) %>% 
   summarise(
     cv = 100 * sd(aveval, na.rm = T) / mean(aveval, na.rm = T), 
     .groups = 'drop'
@@ -72,16 +73,16 @@ output$dlfigs <- downloadHandler(
     
     todl <- dat %>% 
       filter(yr %in% yrssel) %>% 
-      select(Savspecies, var, Site) %>% 
+      select(Species, var, Site) %>% 
       unique %>% 
-      arrange(Savspecies, var, Site)
+      arrange(Species, var, Site)
 
     pdf(file, width = input$width, height = input$height)
     
     for(i in 1:nrow(todl)){
       
       site <- todl[[i, 'Site']]
-      species <- todl[[i, 'Savspecies']]
+      species <- todl[[i, 'Species']]
       varplo <- todl[[i, 'var']]
       
       p <- show_compplot(dat, yrssel, site, species, varplo)
@@ -132,7 +133,7 @@ sumplodat <- reactive({
     filter(yr == yrssel)
   
   out <- ggplot(toplo, aes(x = Site, y = var, fill = cv)) +
-    facet_wrap(~Savspecies, ncol  = 2) + 
+    facet_wrap(~Species, ncol  = 2) + 
     scale_x_discrete(expand = c(0, 0)) + 
     scale_y_discrete(expand = c(0, 0)) +
     geom_tile(colour = 'black') + 
